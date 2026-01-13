@@ -51,13 +51,17 @@ export interface RiskAssessment {
 export interface CaseRiskInput {
   caseType: string;
   claimAmount?: number;
+  disputeValue?: number;
   evidenceStrength: "strong" | "moderate" | "weak";
-  precedentSupport: "favorable" | "mixed" | "unfavorable" | "none";
-  opposingPartyStrength: "strong" | "moderate" | "weak";
-  timelinePressure: "urgent" | "normal" | "flexible";
-  jurisdictionFamiliarity: "familiar" | "moderate" | "unfamiliar";
-  settlementPossibility: "likely" | "possible" | "unlikely";
-  publicityRisk: "high" | "moderate" | "low";
+  hasLawyer?: boolean;
+  opposingPartyType?: "individual" | "company" | "government";
+  description?: string;
+  precedentSupport?: "favorable" | "mixed" | "unfavorable" | "none";
+  opposingPartyStrength?: "strong" | "moderate" | "weak";
+  timelinePressure?: "urgent" | "normal" | "flexible";
+  jurisdictionFamiliarity?: "familiar" | "moderate" | "unfamiliar";
+  settlementPossibility?: "likely" | "possible" | "unlikely";
+  publicityRisk?: "high" | "moderate" | "low";
 }
 
 // Sözleşme risk değerlendirme girdisi
@@ -148,6 +152,16 @@ function generateId(): string {
  */
 export function assessCaseRisk(input: CaseRiskInput): RiskAssessment {
   const factors: RiskFactor[] = [];
+  
+  // Default değerler
+  const precedentSupport = input.precedentSupport ?? "mixed";
+  const opposingPartyStrength = input.opposingPartyStrength ?? 
+    (input.opposingPartyType === "government" ? "strong" : 
+     input.opposingPartyType === "company" ? "moderate" : "weak");
+  const timelinePressure = input.timelinePressure ?? "normal";
+  const settlementPossibility = input.settlementPossibility ?? "possible";
+  const publicityRisk = input.publicityRisk ?? "moderate";
+  const jurisdictionFamiliarity = input.jurisdictionFamiliarity ?? "moderate";
 
   // Kanıt gücü faktörü
   const evidenceScore = input.evidenceStrength === "strong" ? 20 :
@@ -169,16 +183,16 @@ export function assessCaseRisk(input: CaseRiskInput): RiskAssessment {
   });
 
   // Emsal destek faktörü
-  const precedentScore = input.precedentSupport === "favorable" ? 15 :
-                         input.precedentSupport === "mixed" ? 45 :
-                         input.precedentSupport === "unfavorable" ? 75 : 60;
+  const precedentScore = precedentSupport === "favorable" ? 15 :
+                         precedentSupport === "mixed" ? 45 :
+                         precedentSupport === "unfavorable" ? 75 : 60;
   factors.push({
     id: "precedent_support",
     name: "Emsal İçtihat Desteği",
     category: "legal",
-    description: `Emsal içtihatlar ${input.precedentSupport === "favorable" ? "lehte" :
-                                    input.precedentSupport === "mixed" ? "karışık" :
-                                    input.precedentSupport === "unfavorable" ? "aleyhte" : "yetersiz"}`,
+    description: `Emsal içtihatlar ${precedentSupport === "favorable" ? "lehte" :
+                                    precedentSupport === "mixed" ? "karışık" :
+                                    precedentSupport === "unfavorable" ? "aleyhte" : "yetersiz"}`,
     weight: 0.20,
     score: precedentScore,
     level: calculateRiskLevel(precedentScore),
@@ -191,14 +205,14 @@ export function assessCaseRisk(input: CaseRiskInput): RiskAssessment {
   });
 
   // Karşı taraf gücü
-  const opposingScore = input.opposingPartyStrength === "strong" ? 70 :
-                        input.opposingPartyStrength === "moderate" ? 45 : 25;
+  const opposingScore = opposingPartyStrength === "strong" ? 70 :
+                        opposingPartyStrength === "moderate" ? 45 : 25;
   factors.push({
     id: "opposing_party",
     name: "Karşı Taraf Gücü",
     category: "operational",
-    description: `Karşı taraf ${input.opposingPartyStrength === "strong" ? "güçlü" :
-                               input.opposingPartyStrength === "moderate" ? "orta düzeyde" : "zayıf"}`,
+    description: `Karşı taraf ${opposingPartyStrength === "strong" ? "güçlü" :
+                               opposingPartyStrength === "moderate" ? "orta düzeyde" : "zayıf"}`,
     weight: 0.15,
     score: opposingScore,
     level: calculateRiskLevel(opposingScore),
@@ -210,14 +224,14 @@ export function assessCaseRisk(input: CaseRiskInput): RiskAssessment {
   });
 
   // Zaman baskısı
-  const timeScore = input.timelinePressure === "urgent" ? 75 :
-                    input.timelinePressure === "normal" ? 35 : 15;
+  const timeScore = timelinePressure === "urgent" ? 75 :
+                    timelinePressure === "normal" ? 35 : 15;
   factors.push({
     id: "timeline_pressure",
     name: "Zaman Baskısı",
     category: "operational",
-    description: `Süre baskısı ${input.timelinePressure === "urgent" ? "acil" :
-                                input.timelinePressure === "normal" ? "normal" : "esnek"}`,
+    description: `Süre baskısı ${timelinePressure === "urgent" ? "acil" :
+                                timelinePressure === "normal" ? "normal" : "esnek"}`,
     weight: 0.10,
     score: timeScore,
     level: calculateRiskLevel(timeScore),
@@ -229,14 +243,14 @@ export function assessCaseRisk(input: CaseRiskInput): RiskAssessment {
   });
 
   // Sulh olasılığı
-  const settlementScore = input.settlementPossibility === "likely" ? 20 :
-                          input.settlementPossibility === "possible" ? 45 : 70;
+  const settlementScore = settlementPossibility === "likely" ? 20 :
+                          settlementPossibility === "possible" ? 45 : 70;
   factors.push({
     id: "settlement",
     name: "Sulh Olasılığı",
     category: "financial",
-    description: `Sulh ${input.settlementPossibility === "likely" ? "muhtemel" :
-                        input.settlementPossibility === "possible" ? "mümkün" : "zor"}`,
+    description: `Sulh ${settlementPossibility === "likely" ? "muhtemel" :
+                        settlementPossibility === "possible" ? "mümkün" : "zor"}`,
     weight: 0.15,
     score: settlementScore,
     level: calculateRiskLevel(settlementScore),
@@ -249,14 +263,14 @@ export function assessCaseRisk(input: CaseRiskInput): RiskAssessment {
   });
 
   // Kamuoyu riski
-  const publicityScore = input.publicityRisk === "high" ? 80 :
-                         input.publicityRisk === "moderate" ? 45 : 15;
+  const publicityScore = publicityRisk === "high" ? 80 :
+                         publicityRisk === "moderate" ? 45 : 15;
   factors.push({
     id: "publicity",
     name: "Kamuoyu Riski",
     category: "reputational",
-    description: `Kamuoyu etkisi ${input.publicityRisk === "high" ? "yüksek" :
-                                  input.publicityRisk === "moderate" ? "orta" : "düşük"}`,
+    description: `Kamuoyu etkisi ${publicityRisk === "high" ? "yüksek" :
+                                  publicityRisk === "moderate" ? "orta" : "düşük"}`,
     weight: 0.15,
     score: publicityScore,
     level: calculateRiskLevel(publicityScore),
@@ -724,10 +738,10 @@ function generateCaseSummary(score: number, input: CaseRiskInput): string {
   if (input.evidenceStrength === "weak") {
     summary += "Kanıt gücünün zayıf olması önemli bir risk faktörüdür. ";
   }
-  if (input.precedentSupport === "unfavorable" || input.precedentSupport === "none") {
+  if (input.precedentSupport && (input.precedentSupport === "unfavorable" || input.precedentSupport === "none")) {
     summary += "Emsal içtihat desteğinin yetersizliği dikkate alınmalıdır. ";
   }
-  if (input.publicityRisk === "high") {
+  if (input.publicityRisk && input.publicityRisk === "high") {
     summary += "Yüksek kamuoyu ilgisi itibar riski oluşturmaktadır. ";
   }
 
