@@ -441,7 +441,7 @@ export function ApiSettingsPanel({ isOpen, onClose, onSave }: ApiSettingsPanelPr
                   >
                     {SUPPORTED_MODELS[selectedProvider].models.map((model) => (
                       <option key={model.id} value={model.id}>
-                        {model.name} {model.recommended && "⭐"}
+                        {model.name} {"recommended" in model && model.recommended && "⭐"}
                       </option>
                     ))}
                   </select>
