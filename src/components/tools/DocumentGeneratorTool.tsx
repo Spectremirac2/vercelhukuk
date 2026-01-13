@@ -320,7 +320,7 @@ export function DocumentGeneratorTool() {
                       {variable.type === "number" && (
                         <input
                           type="number"
-                          value={(variables[variable.name] as number) || variable.defaultValue || ""}
+                          value={(variables[variable.name] as number) || (typeof variable.defaultValue === "number" ? variable.defaultValue : "")}
                           onChange={(e) => handleVariableChange(variable.name, parseFloat(e.target.value) || 0)}
                           min={variable.validation?.min}
                           max={variable.validation?.max}
