@@ -131,7 +131,7 @@ const toolCategories = [
         name: "Emsal Davalar",
         description: "Benzer dava ve içtihat bulma",
         icon: <Gavel size={24} />,
-        color: "amber" as const,
+        color: "gold" as const,
         badge: "Yeni",
       },
       {
