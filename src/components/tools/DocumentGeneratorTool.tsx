@@ -352,7 +352,7 @@ export function DocumentGeneratorTool() {
 
                       {variable.type === "select" && variable.options && (
                         <select
-                          value={(variables[variable.name] as string) || variable.defaultValue || ""}
+                          value={(variables[variable.name] as string) || (typeof variable.defaultValue === "string" ? variable.defaultValue : "")}
                           onChange={(e) => handleVariableChange(variable.name, e.target.value)}
                           className="w-full px-3 py-2 rounded-lg bg-[var(--input-background)] border border-[var(--border-color)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                         >
