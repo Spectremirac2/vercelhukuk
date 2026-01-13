@@ -9,7 +9,7 @@ import { validateChatRequest } from "@/lib/schemas";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { withTimeout, deduplicateSources, formatUserError } from "@/lib/utils";
 import OpenAI from "openai";
-import { enrichPromptWithFullLegalContext, getDatabaseStats } from "@/lib/legal-knowledge-service";
+import { enrichPromptWithLegalContext, enrichPromptWithFullLegalContext, getDatabaseStats } from "@/lib/legal-knowledge-service";
 
 // Configuration
 // Varsayılan Gemini API Key (demo amaçlı - production'da env'den alınmalı)
