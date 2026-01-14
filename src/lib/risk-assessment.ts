@@ -68,17 +68,20 @@ export interface CaseRiskInput {
 export interface ContractRiskInput {
   contractType: string;
   contractValue?: number;
-  counterpartyReliability: "high" | "moderate" | "low" | "unknown";
-  termLength: "short" | "medium" | "long"; // < 1 yıl, 1-5 yıl, > 5 yıl
-  exclusivityClause: boolean;
-  penaltyClause: boolean;
-  terminationEase: "easy" | "moderate" | "difficult";
-  jurisdictionClause: "favorable" | "neutral" | "unfavorable";
-  arbitrationClause: boolean;
-  forceNajeureClause: boolean;
-  limitationOfLiability: boolean;
-  confidentialityClause: boolean;
-  intellectualPropertyRisk: "high" | "moderate" | "low";
+  hasLegalReview?: boolean;
+  counterpartyType?: "individual" | "small_business" | "corporation" | "government";
+  contractText?: string;
+  counterpartyReliability?: "high" | "moderate" | "low" | "unknown";
+  termLength?: "short" | "medium" | "long"; // < 1 yıl, 1-5 yıl, > 5 yıl
+  exclusivityClause?: boolean;
+  penaltyClause?: boolean;
+  terminationEase?: "easy" | "moderate" | "difficult";
+  jurisdictionClause?: "favorable" | "neutral" | "unfavorable";
+  arbitrationClause?: boolean;
+  forceNajeureClause?: boolean;
+  limitationOfLiability?: boolean;
+  confidentialityClause?: boolean;
+  intellectualPropertyRisk?: "high" | "moderate" | "low";
 }
 
 // Uyumluluk risk değerlendirme girdisi
@@ -313,17 +316,33 @@ export function assessCaseRisk(input: CaseRiskInput): RiskAssessment {
 export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   const factors: RiskFactor[] = [];
 
+  // Default değerler
+  const counterpartyReliability = input.counterpartyReliability ?? 
+    (input.counterpartyType === "government" ? "high" :
+     input.counterpartyType === "corporation" ? "moderate" : 
+     input.counterpartyType === "small_business" ? "low" : "unknown");
+  const termLength = input.termLength ?? "medium";
+  const exclusivityClause = exclusivityClause ?? false;
+  const penaltyClause = penaltyClause ?? false;
+  const terminationEase = terminationEase ?? "moderate";
+  const jurisdictionClause = jurisdictionClause ?? "neutral";
+  const arbitrationClause = arbitrationClause ?? false;
+  const forceNajeureClause = forceNajeureClause ?? false;
+  const limitationOfLiability = limitationOfLiability ?? false;
+  const confidentialityClause = input.confidentialityClause ?? false;
+  const intellectualPropertyRisk = intellectualPropertyRisk ?? "moderate";
+
   // Karşı taraf güvenilirliği
-  const counterpartyScore = input.counterpartyReliability === "high" ? 15 :
-                            input.counterpartyReliability === "moderate" ? 40 :
-                            input.counterpartyReliability === "low" ? 75 : 60;
+  const counterpartyScore = counterpartyReliability === "high" ? 15 :
+                            counterpartyReliability === "moderate" ? 40 :
+                            counterpartyReliability === "low" ? 75 : 60;
   factors.push({
     id: "counterparty_reliability",
     name: "Karşı Taraf Güvenilirliği",
     category: "contractual",
-    description: `Karşı taraf güvenilirliği ${input.counterpartyReliability === "high" ? "yüksek" :
-                                              input.counterpartyReliability === "moderate" ? "orta" :
-                                              input.counterpartyReliability === "low" ? "düşük" : "bilinmiyor"}`,
+    description: `Karşı taraf güvenilirliği ${counterpartyReliability === "high" ? "yüksek" :
+                                              counterpartyReliability === "moderate" ? "orta" :
+                                              counterpartyReliability === "low" ? "düşük" : "bilinmiyor"}`,
     weight: 0.20,
     score: counterpartyScore,
     level: calculateRiskLevel(counterpartyScore),
@@ -335,14 +354,14 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   });
 
   // Sözleşme süresi riski
-  const termScore = input.termLength === "long" ? 65 :
-                    input.termLength === "medium" ? 40 : 20;
+  const termScore = termLength === "long" ? 65 :
+                    termLength === "medium" ? 40 : 20;
   factors.push({
     id: "term_length",
     name: "Sözleşme Süresi",
     category: "contractual",
-    description: `Sözleşme süresi ${input.termLength === "long" ? "uzun (5+ yıl)" :
-                                   input.termLength === "medium" ? "orta (1-5 yıl)" : "kısa (< 1 yıl)"}`,
+    description: `Sözleşme süresi ${termLength === "long" ? "uzun (5+ yıl)" :
+                                   termLength === "medium" ? "orta (1-5 yıl)" : "kısa (< 1 yıl)"}`,
     weight: 0.10,
     score: termScore,
     level: calculateRiskLevel(termScore),
@@ -354,7 +373,7 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   });
 
   // Münhasırlık riski
-  if (input.exclusivityClause) {
+  if (exclusivityClause) {
     factors.push({
       id: "exclusivity",
       name: "Münhasırlık Maddesi",
@@ -373,7 +392,7 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   }
 
   // Ceza koşulu riski
-  if (input.penaltyClause) {
+  if (penaltyClause) {
     factors.push({
       id: "penalty",
       name: "Ceza Koşulu",
@@ -392,14 +411,14 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   }
 
   // Fesih kolaylığı
-  const terminationScore = input.terminationEase === "difficult" ? 70 :
-                           input.terminationEase === "moderate" ? 40 : 15;
+  const terminationScore = terminationEase === "difficult" ? 70 :
+                           terminationEase === "moderate" ? 40 : 15;
   factors.push({
     id: "termination",
     name: "Fesih Zorluğu",
     category: "operational",
-    description: `Fesih ${input.terminationEase === "difficult" ? "zor" :
-                         input.terminationEase === "moderate" ? "orta düzeyde" : "kolay"}`,
+    description: `Fesih ${terminationEase === "difficult" ? "zor" :
+                         terminationEase === "moderate" ? "orta düzeyde" : "kolay"}`,
     weight: 0.15,
     score: terminationScore,
     level: calculateRiskLevel(terminationScore),
@@ -412,14 +431,14 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   });
 
   // Yetki maddesi
-  const jurisdictionScore = input.jurisdictionClause === "favorable" ? 15 :
-                            input.jurisdictionClause === "neutral" ? 35 : 65;
+  const jurisdictionScore = jurisdictionClause === "favorable" ? 15 :
+                            jurisdictionClause === "neutral" ? 35 : 65;
   factors.push({
     id: "jurisdiction",
     name: "Yetki Maddesi",
     category: "legal",
-    description: `Yetki maddesi ${input.jurisdictionClause === "favorable" ? "lehte" :
-                                 input.jurisdictionClause === "neutral" ? "nötr" : "aleyhte"}`,
+    description: `Yetki maddesi ${jurisdictionClause === "favorable" ? "lehte" :
+                                 jurisdictionClause === "neutral" ? "nötr" : "aleyhte"}`,
     weight: 0.10,
     score: jurisdictionScore,
     level: calculateRiskLevel(jurisdictionScore),
@@ -432,14 +451,14 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   });
 
   // Fikri mülkiyet riski
-  const ipScore = input.intellectualPropertyRisk === "high" ? 75 :
-                  input.intellectualPropertyRisk === "moderate" ? 45 : 20;
+  const ipScore = intellectualPropertyRisk === "high" ? 75 :
+                  intellectualPropertyRisk === "moderate" ? 45 : 20;
   factors.push({
     id: "intellectual_property",
     name: "Fikri Mülkiyet Riski",
     category: "legal",
-    description: `Fikri mülkiyet riski ${input.intellectualPropertyRisk === "high" ? "yüksek" :
-                                        input.intellectualPropertyRisk === "moderate" ? "orta" : "düşük"}`,
+    description: `Fikri mülkiyet riski ${intellectualPropertyRisk === "high" ? "yüksek" :
+                                        intellectualPropertyRisk === "moderate" ? "orta" : "düşük"}`,
     weight: 0.15,
     score: ipScore,
     level: calculateRiskLevel(ipScore),
@@ -452,7 +471,7 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
   });
 
   // Eksik madde kontrolleri
-  if (!input.forceNajeureClause) {
+  if (!forceNajeureClause) {
     factors.push({
       id: "force_majeure_missing",
       name: "Mücbir Sebep Maddesi Eksik",
@@ -470,7 +489,7 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
     });
   }
 
-  if (!input.limitationOfLiability) {
+  if (!limitationOfLiability) {
     factors.push({
       id: "liability_limitation_missing",
       name: "Sorumluluk Sınırı Eksik",
@@ -753,13 +772,17 @@ function generateContractSummary(score: number, input: ContractRiskInput): strin
   const level = calculateRiskLevel(score);
   let summary = `Bu sözleşme için genel risk seviyesi ${getRiskLevelName(level).toLowerCase()} (%${score}) olarak değerlendirilmiştir. `;
 
-  if (input.counterpartyReliability === "low" || input.counterpartyReliability === "unknown") {
+  const counterpartyReliability = input.counterpartyReliability ?? "unknown";
+  const exclusivityClause = input.exclusivityClause ?? false;
+  const terminationEase = input.terminationEase ?? "moderate";
+
+  if (counterpartyReliability === "low" || counterpartyReliability === "unknown") {
     summary += "Karşı taraf güvenilirliği konusunda dikkatli olunmalıdır. ";
   }
-  if (input.exclusivityClause) {
+  if (exclusivityClause) {
     summary += "Münhasırlık maddesi esnekliği kısıtlamaktadır. ";
   }
-  if (input.terminationEase === "difficult") {
+  if (terminationEase === "difficult") {
     summary += "Fesih koşullarının zorluğu uzun vadeli bağlılık riski oluşturmaktadır. ";
   }
 
@@ -820,13 +843,13 @@ function generateContractRecommendations(factors: RiskFactor[], input: ContractR
   });
 
   // Eksik maddeler için öneriler
-  if (!input.forceNajeureClause) {
+  if (!forceNajeureClause) {
     recommendations.push("Mücbir sebep maddesi eklenmesi önerilir");
   }
-  if (!input.limitationOfLiability) {
+  if (!limitationOfLiability) {
     recommendations.push("Sorumluluk sınırı belirlenmesi önerilir");
   }
-  if (!input.arbitrationClause && input.jurisdictionClause === "unfavorable") {
+  if (!arbitrationClause && jurisdictionClause === "unfavorable") {
     recommendations.push("Tahkim maddesi alternatif olarak değerlendirilebilir");
   }
 
