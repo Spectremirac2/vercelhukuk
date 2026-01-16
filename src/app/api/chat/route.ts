@@ -13,7 +13,7 @@ import { enrichPromptWithLegalContext, enrichPromptWithFullLegalContext } from "
 
 // Configuration
 // Varsayılan Gemini API Key (demo amaçlı - production'da env'den alınmalı)
-const DEFAULT_DEMO_GEMINI_KEY = "AIzaSyBTe1pKngLSJyV3lJdrHstpRRkPDeNqztU";
+const DEFAULT_DEMO_GEMINI_KEY = "AIzaSyDrejx7w5Zm4JLNf9SKhn4qt_8aLlr8ZR8";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || DEFAULT_DEMO_GEMINI_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const DEFAULT_EVIDENCE_PROVIDER = process.env.EVIDENCE_PROVIDER || "web_search";

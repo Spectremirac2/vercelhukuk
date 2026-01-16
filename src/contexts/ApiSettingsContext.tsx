@@ -23,7 +23,7 @@ interface ApiSettingsContextValue {
 const STORAGE_KEY = "hukuk-ai-api-settings";
 
 // Varsayılan Gemini API Key (demo amaçlı)
-const DEFAULT_GEMINI_API_KEY = "AIzaSyBTe1pKngLSJyV3lJdrHstpRRkPDeNqztU";
+const DEFAULT_GEMINI_API_KEY = "AIzaSyDrejx7w5Zm4JLNf9SKhn4qt_8aLlr8ZR8";
 
 const DEFAULT_SETTINGS: ApiSettings = {
   geminiApiKey: DEFAULT_GEMINI_API_KEY,
