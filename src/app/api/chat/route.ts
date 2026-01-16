@@ -66,17 +66,30 @@ async function getSystemInstruction(): Promise<string> {
     // Dynamic import to avoid module-level errors
     const { getDatabaseStats } = await import("@/lib/legal-knowledge-service");
     const stats = getDatabaseStats();
+    console.log("[API] Database stats loaded successfully:", {
+      laws: stats.totalLaws,
+      articles: stats.totalArticles,
+      precedents: stats.totalPrecedents,
+      concepts: stats.totalConcepts,
+    });
     return SYSTEM_INSTRUCTION_BASE.replace(
       "BİLGİ TABANIM:\n- Kapsamlı Türk hukuk mevzuatı ve içtihat bilgisi\n- Temel kanunlar, kritik maddeler ve emsal kararlar\n- Hukuki kavram tanımları ve pratik öneriler",
       `BİLGİ TABANIM:\n- ${stats.totalLaws} temel kanun ve ${stats.totalArticles} kritik madde\n- ${stats.totalPrecedents} güncel Yargıtay/Danıştay emsal kararı\n- ${stats.totalConcepts} hukuki kavram tanımı\n- Kapsamlı Türk hukuk mevzuatı ve içtihat bilgisi`
     );
   } catch (error) {
-    console.error("Error getting database stats:", error);
+    console.error("[API] Error getting database stats:", error);
+    if (error instanceof Error) {
+      console.error("[API] Database stats error message:", error.message);
+      console.error("[API] Database stats error stack:", error.stack);
+    }
+    // Return base instruction without stats if there's an error
     return SYSTEM_INSTRUCTION_BASE;
   }
 }
 
 export async function POST(req: NextRequest) {
+  console.log("[API] Chat route handler called");
+  
   // Check rate limit
   const rateLimitResult = checkRateLimit(req, "chat");
   if (!rateLimitResult.allowed) {
@@ -275,7 +288,15 @@ mevzuat.gov.tr, resmigazete.gov.tr, anayasa.gov.tr, yargitay.gov.tr, danistay.go
       { headers: rateLimitResult.headers }
     );
   } catch (error: unknown) {
-    console.error("API Error:", error);
+    // Detailed error logging for debugging
+    console.error("[API] Error occurred:", error);
+    if (error instanceof Error) {
+      console.error("[API] Error message:", error.message);
+      console.error("[API] Error stack:", error.stack);
+      console.error("[API] Error name:", error.name);
+    } else {
+      console.error("[API] Error (non-Error object):", JSON.stringify(error, null, 2));
+    }
 
     // Format error for user (hide internal details)
     const userMessage = formatUserError(error);
@@ -288,6 +309,7 @@ mevzuat.gov.tr, resmigazete.gov.tr, anayasa.gov.tr, yargitay.gov.tr, danistay.go
           debug: {
             originalError:
               error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
           },
         }),
       },
