@@ -843,6 +843,11 @@ function generateContractRecommendations(factors: RiskFactor[], input: ContractR
   });
 
   // Eksik maddeler için öneriler
+  const forceNajeureClause = input.forceNajeureClause ?? false;
+  const limitationOfLiability = input.limitationOfLiability ?? false;
+  const arbitrationClause = input.arbitrationClause ?? false;
+  const jurisdictionClause = input.jurisdictionClause ?? "neutral";
+
   if (!forceNajeureClause) {
     recommendations.push("Mücbir sebep maddesi eklenmesi önerilir");
   }
