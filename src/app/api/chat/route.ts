@@ -27,16 +27,15 @@ const REQUEST_TIMEOUT_MS = 60000; // 60 seconds
 const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash-exp";
 const DEFAULT_OPENAI_MODEL = "gpt-4o";
 
-// System instruction for legal research
-const SYSTEM_INSTRUCTION = `
+// System instruction for legal research (without dynamic stats)
+const SYSTEM_INSTRUCTION_BASE = `
 Sen Türk Hukuku için uzmanlaşmış bir Hukuk Araştırma Asistanısın.
 Görevin: Türk hukuk kaynaklarını kullanarak hukuki sorulara doğru ve kanıtlara dayalı yanıtlar vermek.
 
 BİLGİ TABANIM:
-- ${getDatabaseStats().totalLaws} temel kanun ve ${getDatabaseStats().totalArticles} kritik madde
-- ${getDatabaseStats().totalPrecedents} güncel Yargıtay/Danıştay emsal kararı  
-- ${getDatabaseStats().totalConcepts} hukuki kavram tanımı
 - Kapsamlı Türk hukuk mevzuatı ve içtihat bilgisi
+- Temel kanunlar, kritik maddeler ve emsal kararlar
+- Hukuki kavram tanımları ve pratik öneriler
 
 KURALLAR:
 1. DAYANAK: Her iddia sağlanan kaynaklarla (Web, Dosya veya Veritabanı) desteklenmelidir.
@@ -60,6 +59,20 @@ KURALLAR:
    - **Uyarı:** "Bu bilgi hukuki tavsiye niteliği taşımaz."
 8. DİL: Türkçe.
 `;
+
+// Helper function to get system instruction with dynamic stats
+function getSystemInstruction(): string {
+  try {
+    const stats = getDatabaseStats();
+    return SYSTEM_INSTRUCTION_BASE.replace(
+      "BİLGİ TABANIM:\n- Kapsamlı Türk hukuk mevzuatı ve içtihat bilgisi\n- Temel kanunlar, kritik maddeler ve emsal kararlar\n- Hukuki kavram tanımları ve pratik öneriler",
+      `BİLGİ TABANIM:\n- ${stats.totalLaws} temel kanun ve ${stats.totalArticles} kritik madde\n- ${stats.totalPrecedents} güncel Yargıtay/Danıştay emsal kararı\n- ${stats.totalConcepts} hukuki kavram tanımı\n- Kapsamlı Türk hukuk mevzuatı ve içtihat bilgisi`
+    );
+  } catch (error) {
+    console.error("Error getting database stats:", error);
+    return SYSTEM_INSTRUCTION_BASE;
+  }
+}
 
 export async function POST(req: NextRequest) {
   // Check rate limit
@@ -172,7 +185,7 @@ export async function POST(req: NextRequest) {
       const legalContext = enrichPromptWithFullLegalContext(userQuery);
       
       geminiMessages[0].parts[0].text =
-        SYSTEM_INSTRUCTION +
+        getSystemInstruction() +
         (legalContext ? `\n\n### Dahili Bilgi Tabanı Referansları:${legalContext}` : "") +
         "\n\nKullanıcı Sorgusu: " +
         userQuery;
@@ -299,7 +312,7 @@ async function handleOpenAIChat(
     ? enrichPromptWithLegalContext(lastUserMessage.content)
     : "";
 
-  const systemMessage = `${SYSTEM_INSTRUCTION}
+  const systemMessage = `${getSystemInstruction()}
 ${legalContext ? `\n### Dahili Bilgi Tabanı Referansları:${legalContext}` : ""}
 
 NOT: Bu yanıt OpenAI modeli tarafından oluşturulmaktadır. Web araması yapılmamıştır.
