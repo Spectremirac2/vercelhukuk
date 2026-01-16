@@ -64,8 +64,17 @@ export class WebSearchEvidenceProvider implements EvidenceProvider {
         sources: uniqueSources,
         rawGroundingMetadata: groundingMetadata,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in WebSearchEvidenceProvider:", error);
+      
+      // Handle 401 Unauthorized specifically
+      if (error?.status === 401 || error?.code === 401) {
+        const authError = new Error("Gemini API anahtarı geçersiz veya yetkisiz. Lütfen API anahtarınızı kontrol edin.");
+        (authError as any).code = "INVALID_API_KEY";
+        (authError as any).status = 401;
+        throw authError;
+      }
+      
       throw error;
     }
   }

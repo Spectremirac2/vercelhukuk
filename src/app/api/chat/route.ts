@@ -298,6 +298,23 @@ mevzuat.gov.tr, resmigazete.gov.tr, anayasa.gov.tr, yargitay.gov.tr, danistay.go
       console.error("[API] Error (non-Error object):", JSON.stringify(error, null, 2));
     }
 
+    // Handle 401 Unauthorized (Invalid API Key)
+    const errorAny = error as any;
+    if (errorAny?.status === 401 || errorAny?.code === 401 || errorAny?.code === "INVALID_API_KEY") {
+      return NextResponse.json(
+        {
+          error: "Gemini API anahtarı geçersiz veya yetkisiz. Lütfen Netlify environment variables'dan API anahtarınızı kontrol edin.",
+          code: "INVALID_API_KEY",
+          ...(DEBUG && {
+            debug: {
+              originalError: error instanceof Error ? error.message : String(error),
+            },
+          }),
+        },
+        { status: 401, headers: rateLimitResult.headers }
+      );
+    }
+
     // Format error for user (hide internal details)
     const userMessage = formatUserError(error);
 
