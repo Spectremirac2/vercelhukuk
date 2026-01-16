@@ -322,15 +322,15 @@ export function assessContractRisk(input: ContractRiskInput): RiskAssessment {
      input.counterpartyType === "corporation" ? "moderate" : 
      input.counterpartyType === "small_business" ? "low" : "unknown");
   const termLength = input.termLength ?? "medium";
-  const exclusivityClause = exclusivityClause ?? false;
-  const penaltyClause = penaltyClause ?? false;
-  const terminationEase = terminationEase ?? "moderate";
-  const jurisdictionClause = jurisdictionClause ?? "neutral";
-  const arbitrationClause = arbitrationClause ?? false;
-  const forceNajeureClause = forceNajeureClause ?? false;
-  const limitationOfLiability = limitationOfLiability ?? false;
+  const exclusivityClause = input.exclusivityClause ?? false;
+  const penaltyClause = input.penaltyClause ?? false;
+  const terminationEase = input.terminationEase ?? "moderate";
+  const jurisdictionClause = input.jurisdictionClause ?? "neutral";
+  const arbitrationClause = input.arbitrationClause ?? false;
+  const forceNajeureClause = input.forceNajeureClause ?? false;
+  const limitationOfLiability = input.limitationOfLiability ?? false;
   const confidentialityClause = input.confidentialityClause ?? false;
-  const intellectualPropertyRisk = intellectualPropertyRisk ?? "moderate";
+  const intellectualPropertyRisk = input.intellectualPropertyRisk ?? "moderate";
 
   // Karşı taraf güvenilirliği
   const counterpartyScore = counterpartyReliability === "high" ? 15 :
