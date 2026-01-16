@@ -10,6 +10,7 @@ import {
   type RiskAssessment,
   type CaseRiskInput,
   type ContractRiskInput,
+  type RiskLevel,
 } from "@/lib/risk-assessment";
 import { AlertTriangle } from "lucide-react";
 
@@ -79,12 +80,13 @@ export function RiskAssessmentTool({ isOpen, onClose }: RiskAssessmentToolProps)
     }
   };
 
-  const getRiskGradient = (level: string) => {
+  const getRiskGradient = (level: RiskLevel) => {
     switch (level) {
       case "critical": return "from-red-600 to-rose-600";
       case "high": return "from-orange-500 to-red-500";
       case "medium": return "from-yellow-500 to-orange-500";
       case "low": return "from-green-500 to-emerald-500";
+      case "minimal": return "from-green-400 to-emerald-400";
       default: return "from-gray-500 to-gray-600";
     }
   };
@@ -322,19 +324,19 @@ export function RiskAssessmentTool({ isOpen, onClose }: RiskAssessmentToolProps)
       {result && (
         <div className="space-y-6">
           {/* Overall Risk Score */}
-          <div className={`p-6 rounded-xl bg-gradient-to-r ${getRiskGradient(result.overallRisk)}`}>
+          <div className={`p-6 rounded-xl bg-gradient-to-r ${getRiskGradient(result.overallLevel)}`}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-white">Genel Risk Değerlendirmesi</h3>
                 <p className="text-sm text-white/70 mt-1">
-                  {result.overallRisk === "critical" ? "Kritik risk seviyesi - acil önlem gerekli" :
-                   result.overallRisk === "high" ? "Yüksek risk - dikkatli değerlendirme gerekli" :
-                   result.overallRisk === "medium" ? "Orta risk - bazı önlemler önerilir" :
+                  {result.overallLevel === "critical" ? "Kritik risk seviyesi - acil önlem gerekli" :
+                   result.overallLevel === "high" ? "Yüksek risk - dikkatli değerlendirme gerekli" :
+                   result.overallLevel === "medium" ? "Orta risk - bazı önlemler önerilir" :
                    "Düşük risk - standart dikkat yeterli"}
                 </p>
               </div>
               <div className="text-center">
-                <div className="text-5xl font-bold text-white">{result.score}</div>
+                <div className="text-5xl font-bold text-white">{result.overallScore}</div>
                 <div className="text-sm text-white/70">/100</div>
               </div>
             </div>
