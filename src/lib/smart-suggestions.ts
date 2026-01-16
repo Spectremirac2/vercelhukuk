@@ -6,7 +6,7 @@
  */
 
 import { ALL_FAQ, FAQItem, searchFAQ, getFAQByCategory, FAQCategory } from './data/faq-database';
-import { TURK_KANUNLARI, searchTurkishLaw } from './data/turkish-law-database';
+import { ALL_LAWS, searchArticles } from './data/turkish-law-database';
 import { EMSAL_KARARLAR, searchPrecedents } from './data/precedent-database';
 import { HUKUKI_KAVRAMLAR, searchConcepts } from './data/legal-concepts-database';
 
@@ -422,25 +422,22 @@ function getConceptSuggestions(query: string): SmartSuggestion[] {
 }
 
 function getLawSuggestions(query: string): SmartSuggestion[] {
-  const laws = searchTurkishLaw(query);
+  const results = searchArticles(query);
   const suggestions: SmartSuggestion[] = [];
   
-  laws.slice(0, 2).forEach((law, index) => {
-    // İlk kritik maddeyi öner
-    if (law.criticalArticles && law.criticalArticles.length > 0) {
-      const article = law.criticalArticles[0];
-      suggestions.push({
-        id: `law_${law.number}_${article.number}`,
-        type: 'article',
-        title: `📜 ${law.name} m.${article.number}`,
-        description: article.content.substring(0, 100) + '...',
-        relevance: 65 - (index * 5),
-        action: {
-          type: 'show_info',
-          payload: { lawNumber: law.number, articleNumber: article.number }
-        }
-      });
-    }
+  results.slice(0, 2).forEach((result, index) => {
+    const { law, article } = result;
+    suggestions.push({
+      id: `law_${law.number}_${article.number}`,
+      type: 'article',
+      title: `📜 ${law.name} m.${article.number}`,
+      description: article.content.substring(0, 100) + '...',
+      relevance: 65 - (index * 5),
+      action: {
+        type: 'show_info',
+        payload: { lawNumber: law.number, articleNumber: article.number }
+      }
+    });
   });
   
   return suggestions;
