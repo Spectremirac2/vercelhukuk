@@ -357,15 +357,19 @@ export function RiskAssessmentTool({ isOpen, onClose }: RiskAssessmentToolProps)
                     <span className="text-xs text-gray-500">{factor.category}</span>
                   </div>
                   <span className="text-sm font-medium">
-                    Etki: {factor.impact}/10
+                    Etki: {Math.round(factor.score / 10)}/10
                   </span>
                 </div>
                 <h5 className="font-medium text-white mb-1">{factor.name}</h5>
                 <p className="text-sm text-gray-400">{factor.description}</p>
-                {factor.mitigation && (
+                {factor.mitigationSuggestions && factor.mitigationSuggestions.length > 0 && (
                   <div className="mt-2 p-2 bg-white/5 rounded-lg">
-                    <span className="text-xs text-green-400">💡 Öneri:</span>
-                    <p className="text-sm text-gray-300 mt-1">{factor.mitigation}</p>
+                    <span className="text-xs text-green-400">💡 Öneriler:</span>
+                    <ul className="text-sm text-gray-300 mt-1 list-disc list-inside space-y-1">
+                      {factor.mitigationSuggestions.map((suggestion, idx) => (
+                        <li key={idx}>{suggestion}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
