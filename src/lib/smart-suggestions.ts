@@ -7,8 +7,8 @@
 
 import { ALL_FAQ, FAQItem, searchFAQ, getFAQByCategory, FAQCategory } from './data/faq-database';
 import { ALL_LAWS, searchArticles } from './data/turkish-law-database';
-import { EMSAL_KARARLAR, searchPrecedents } from './data/precedent-database';
-import { HUKUKI_KAVRAMLAR, searchConcepts } from './data/legal-concepts-database';
+import { ALL_PRECEDENTS, searchPrecedents } from './data/precedent-database';
+import { ALL_CONCEPTS, searchConcepts } from './data/legal-concepts-database';
 
 // ============================================
 // TİPLER
