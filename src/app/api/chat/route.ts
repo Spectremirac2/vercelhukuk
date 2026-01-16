@@ -9,7 +9,7 @@ import { validateChatRequest } from "@/lib/schemas";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { withTimeout, deduplicateSources, formatUserError } from "@/lib/utils";
 import OpenAI from "openai";
-import { enrichPromptWithLegalContext, enrichPromptWithFullLegalContext, getDatabaseStats } from "@/lib/legal-knowledge-service";
+import { enrichPromptWithLegalContext, enrichPromptWithFullLegalContext } from "@/lib/legal-knowledge-service";
 
 // Configuration
 // Varsayılan Gemini API Key (demo amaçlı - production'da env'den alınmalı)
@@ -61,8 +61,10 @@ KURALLAR:
 `;
 
 // Helper function to get system instruction with dynamic stats
-function getSystemInstruction(): string {
+async function getSystemInstruction(): Promise<string> {
   try {
+    // Dynamic import to avoid module-level errors
+    const { getDatabaseStats } = await import("@/lib/legal-knowledge-service");
     const stats = getDatabaseStats();
     return SYSTEM_INSTRUCTION_BASE.replace(
       "BİLGİ TABANIM:\n- Kapsamlı Türk hukuk mevzuatı ve içtihat bilgisi\n- Temel kanunlar, kritik maddeler ve emsal kararlar\n- Hukuki kavram tanımları ve pratik öneriler",
@@ -184,8 +186,9 @@ export async function POST(req: NextRequest) {
       // Enrich with legal knowledge context from internal database (full version with FAQ, updates, etc.)
       const legalContext = enrichPromptWithFullLegalContext(userQuery);
       
+      const systemInstruction = await getSystemInstruction();
       geminiMessages[0].parts[0].text =
-        getSystemInstruction() +
+        systemInstruction +
         (legalContext ? `\n\n### Dahili Bilgi Tabanı Referansları:${legalContext}` : "") +
         "\n\nKullanıcı Sorgusu: " +
         userQuery;
@@ -312,7 +315,8 @@ async function handleOpenAIChat(
     ? enrichPromptWithLegalContext(lastUserMessage.content)
     : "";
 
-  const systemMessage = `${getSystemInstruction()}
+  const systemInstruction = await getSystemInstruction();
+  const systemMessage = `${systemInstruction}
 ${legalContext ? `\n### Dahili Bilgi Tabanı Referansları:${legalContext}` : ""}
 
 NOT: Bu yanıt OpenAI modeli tarafından oluşturulmaktadır. Web araması yapılmamıştır.
