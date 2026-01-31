@@ -11,12 +11,16 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ role, content }: MessageBubbleProps) {
+  const roleLabel = role === "user" ? "Siz" : "Asistan";
+  
   return (
-    <div
+    <article
       className={cn(
         "flex w-full mb-6",
         role === "user" ? "justify-end" : "justify-start"
       )}
+      role="article"
+      aria-label={`${roleLabel} mesajı`}
     >
       <div
         className={cn(
@@ -132,6 +136,6 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }

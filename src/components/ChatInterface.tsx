@@ -12,10 +12,12 @@ import {
 } from "@/components/SearchFilters";
 import { ThemeToggle, useTheme } from "@/contexts/ThemeContext";
 import { useApiSettings } from "@/contexts/ApiSettingsContext";
+import { useAccessibility } from "@/contexts/AccessibilityContext";
 import { useChatShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ConversationSidebar, ConversationItem } from "@/components/ConversationSidebar";
 import { QuickActions, FloatingQuickActions } from "@/components/QuickActions";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { AccessibilitySettingsPanel } from "@/components/accessibility/AccessibilitySettingsPanel";
 import { VerificationData } from "@/components/VerificationBadge";
 import { UserPreferences, UserRole } from "@/lib/user-profile";
 import { LegalSearch } from "@/components/LegalSearch";
@@ -37,6 +39,7 @@ import {
   Scale,
   X,
   Home,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -129,7 +132,11 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showLegalSearch, setShowLegalSearch] = useState(false);
+  const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Accessibility context for screen reader announcements
+  const { announce, settings: accessibilitySettings } = useAccessibility();
 
   // API Settings for multi-provider support
   const { settings: apiSettings } = useApiSettings();
@@ -636,8 +643,33 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
     }
   };
 
+  // Announce new messages for screen readers
+  useEffect(() => {
+    if (messages.length > 0 && accessibilitySettings.autoAnnounceMessages) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "assistant" && !lastMessage.error) {
+        // Truncate long messages for announcement
+        const truncated = lastMessage.content.length > 200 
+          ? lastMessage.content.slice(0, 200) + "..." 
+          : lastMessage.content;
+        announce(`Yeni yanıt: ${truncated}`, "polite");
+      }
+    }
+  }, [messages.length, announce, accessibilitySettings.autoAnnounceMessages, messages]);
+
+  // Announce loading state
+  useEffect(() => {
+    if (isLoading) {
+      announce("Yanıt hazırlanıyor, lütfen bekleyin...", "polite");
+    }
+  }, [isLoading, announce]);
+
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
+    <div 
+      className="flex h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden"
+      role="application"
+      aria-label="Hukuk AI Sohbet Uygulaması"
+    >
       {/* Conversation Sidebar */}
       <ConversationSidebar
         conversations={conversations}
@@ -672,28 +704,42 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
       />
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-full relative">
+      <main 
+        id="main-content" 
+        className="flex-1 flex flex-col h-full relative"
+        role="main"
+        aria-label="Ana sohbet alanı"
+        tabIndex={-1}
+      >
         {/* Header */}
-        <header className="h-16 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 bg-white dark:bg-gray-900 shrink-0 z-10">
+        <header 
+          id="main-nav"
+          className="h-16 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 bg-white dark:bg-gray-900 shrink-0 z-10"
+          role="banner"
+          aria-label="Uygulama başlığı ve araç çubuğu"
+        >
           <div className="flex items-center gap-2">
             {/* Back to Dashboard */}
             {onBackToDashboard && (
               <button
                 onClick={onBackToDashboard}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-1.5 mr-2"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-1.5 mr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 title="Ana Sayfaya Dön"
+                aria-label="Ana sayfaya dön"
               >
-                <Home size={18} />
+                <Home size={18} aria-hidden="true" />
                 <span className="text-sm font-medium hidden sm:inline">Ana Sayfa</span>
               </button>
             )}
             {/* Sidebar Toggle for mobile */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors md:hidden"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors md:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               title="Kenar Çubuğu"
+              aria-label={sidebarCollapsed ? "Kenar çubuğunu aç" : "Kenar çubuğunu kapat"}
+              aria-expanded={!sidebarCollapsed}
             >
-              {sidebarCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+              {sidebarCollapsed ? <PanelLeft size={20} aria-hidden="true" /> : <PanelLeftClose size={20} aria-hidden="true" />}
             </button>
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
               <Scale size={16} />
@@ -705,43 +751,57 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
               </span>
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" role="toolbar" aria-label="Araç çubuğu">
             {/* Legal Search Button */}
             <button
               onClick={() => setShowLegalSearch(true)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               title="Mevzuat Ara"
+              aria-label="Mevzuat ve içtihat arama panelini aç"
             >
-              <Scale size={18} />
+              <Scale size={18} aria-hidden="true" />
             </button>
 
             {/* Export Button */}
             {messages.length > 0 && (
               <button
                 onClick={() => setShowExportModal(true)}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 title="Sohbeti Dışa Aktar (Ctrl+E)"
+                aria-label="Sohbeti dışa aktar. Kısayol: Kontrol artı E"
               >
-                <Download size={18} />
+                <Download size={18} aria-hidden="true" />
               </button>
             )}
 
             {/* Keyboard Shortcuts */}
             <button
               onClick={() => setShowShortcutsModal(true)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               title="Klavye Kısayolları (?)"
+              aria-label="Klavye kısayollarını göster. Kısayol: Soru işareti"
             >
-              <Keyboard size={18} />
+              <Keyboard size={18} aria-hidden="true" />
+            </button>
+
+            {/* Accessibility Button - JAWS/Screen Reader */}
+            <button
+              onClick={() => setShowAccessibilityPanel(true)}
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              title="Ekran Okuyucu Ayarları (JAWS, NVDA, VoiceOver)"
+              aria-label="Ekran okuyucu ayarlarını aç. JAWS, NVDA ve VoiceOver için erişilebilirlik seçenekleri"
+            >
+              <Headphones size={18} aria-hidden="true" />
             </button>
 
             {/* Settings Button */}
             <button
               onClick={() => setShowSettingsPanel(true)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               title="Ayarlar"
+              aria-label="Genel ayarları aç"
             >
-              <Settings size={18} />
+              <Settings size={18} aria-hidden="true" />
             </button>
 
             {/* Theme Toggle */}
@@ -750,6 +810,7 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
             {/* Strict Mode Toggle */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <span
+                id="strict-mode-label"
                 className={cn(
                   "font-medium transition-colors",
                   strictMode
@@ -760,29 +821,44 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
                 Strict
               </span>
               <button
-                onClick={() => setStrictMode(!strictMode)}
+                onClick={() => {
+                  setStrictMode(!strictMode);
+                  announce(strictMode ? "Strict mod kapatıldı" : "Strict mod açıldı", "polite");
+                }}
                 className={cn(
-                  "w-10 h-6 rounded-full p-1 transition-colors relative",
+                  "w-10 h-6 rounded-full p-1 transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
                   strictMode ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
                 )}
-                aria-label="Toggle strict mode"
+                role="switch"
+                aria-checked={strictMode}
+                aria-labelledby="strict-mode-label"
+                aria-describedby="strict-mode-description"
               >
+                <span className="sr-only">Strict mod</span>
                 <div
                   className={cn(
                     "w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
                     strictMode ? "translate-x-4" : "translate-x-0"
                   )}
+                  aria-hidden="true"
                 />
               </button>
+              <span id="strict-mode-description" className="sr-only">
+                Strict mod açıkken en az 2 güvenilir kaynak gerekir
+              </span>
             </div>
 
             {/* New Chat Button */}
             <button
-              onClick={handleNewChat}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+              onClick={() => {
+                handleNewChat();
+                announce("Yeni sohbet başlatıldı", "polite");
+              }}
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               title="Yeni Sohbet (Ctrl+Shift+N)"
+              aria-label="Yeni sohbet başlat. Kısayol: Kontrol artı Shift artı N"
             >
-              <Plus size={20} />
+              <Plus size={20} aria-hidden="true" />
             </button>
           </div>
         </header>
@@ -795,7 +871,14 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
         />
 
         {/* Messages List */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 scroll-smooth">
+        <div 
+          className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 scroll-smooth"
+          role="log"
+          aria-label="Sohbet mesajları"
+          aria-live="polite"
+          aria-relevant="additions"
+          tabIndex={0}
+        >
           {messages.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
               <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-6">
@@ -843,11 +926,12 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
                         onClick={() => handleRetry(msg.id)}
                         disabled={retryingMessageId === msg.id}
                         className="mt-3 flex items-center gap-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50"
+                        aria-label={retryingMessageId === msg.id ? "Mesaj tekrar gönderiliyor" : "Hatalı mesajı tekrar gönder"}
                       >
                         {retryingMessageId === msg.id ? (
-                          <Loader2 size={14} className="animate-spin" />
+                          <Loader2 size={14} className="animate-spin" aria-hidden="true" />
                         ) : (
-                          <RefreshCw size={14} />
+                          <RefreshCw size={14} aria-hidden="true" />
                         )}
                         Tekrar Dene
                       </button>
@@ -898,22 +982,33 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
               className="hidden"
               onChange={handleFileUpload}
               accept=".pdf,.doc,.docx,.txt"
+              aria-label="Belge dosyası seç"
+              id="file-upload-input"
             />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || isLoading}
-              className="p-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-2xl transition-colors disabled:opacity-50"
+              className="p-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-2xl transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               title="Belge Yükle"
+              aria-label={isUploading ? "Belge yükleniyor..." : "PDF, DOC, DOCX veya TXT dosyası yükle"}
+              aria-describedby="file-upload-help"
             >
               {isUploading ? (
-                <Loader2 size={20} className="animate-spin" />
+                <Loader2 size={20} className="animate-spin" aria-hidden="true" />
               ) : (
-                <Paperclip size={20} />
+                <Paperclip size={20} aria-hidden="true" />
               )}
             </button>
+            <span id="file-upload-help" className="sr-only">
+              Desteklenen dosya türleri: PDF, Word belgesi ve metin dosyaları
+            </span>
 
             <div className="relative flex-1">
+              <label htmlFor="chat-input" className="sr-only">
+                Hukuki sorunuzu yazın
+              </label>
               <textarea
+                id="chat-input"
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -922,13 +1017,20 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
                 className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl py-3 pl-4 pr-12 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none max-h-40 min-h-[52px]"
                 rows={1}
                 style={{ minHeight: "52px" }}
+                aria-describedby="chat-input-help"
+                aria-label="Hukuki sorunuzu yazın. Enter tuşuyla gönderin, Shift+Enter ile yeni satır ekleyin"
               />
+              <span id="chat-input-help" className="sr-only">
+                Enter tuşuyla mesajı gönderin. Shift artı Enter ile yeni satır ekleyebilirsiniz.
+              </span>
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 bottom-2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="absolute right-2 bottom-2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-blue-600"
+                aria-label={isLoading ? "Gönderiliyor..." : "Mesajı gönder"}
+                aria-disabled={!input.trim() || isLoading}
               >
-                <Send size={18} />
+                <Send size={18} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -939,7 +1041,7 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
             </p>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Sources Panel (Right Sidebar) */}
       <SourcesPanel sources={sources} />
@@ -964,15 +1066,21 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
 
       {/* Settings Panel Modal */}
       {showSettingsPanel && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-panel-title"
+        >
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ayarlar</h2>
+              <h2 id="settings-panel-title" className="text-lg font-semibold text-gray-900 dark:text-white">Ayarlar</h2>
               <button
                 onClick={() => setShowSettingsPanel(false)}
-                className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="Ayarlar penceresini kapat"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
@@ -994,15 +1102,21 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
 
       {/* Legal Search Modal */}
       {showLegalSearch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="legal-search-title"
+        >
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Mevzuat ve İçtihat Arama</h2>
+              <h2 id="legal-search-title" className="text-lg font-semibold text-gray-900 dark:text-white">Mevzuat ve İçtihat Arama</h2>
               <button
                 onClick={() => setShowLegalSearch(false)}
-                className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="Mevzuat arama penceresini kapat"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
@@ -1012,12 +1126,14 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
                   setInput(`${case_.subject || case_.caseNumber} hakkında bilgi ver. ${citation}`);
                   setShowLegalSearch(false);
                   inputRef.current?.focus();
+                  announce(`Seçilen dava: ${case_.caseNumber}`, "polite");
                 }}
                 onSelectLegislation={(law) => {
                   const citation = formatLegislationCitation(law);
                   setInput(`${law.name} hakkında bilgi ver. ${citation}`);
                   setShowLegalSearch(false);
                   inputRef.current?.focus();
+                  announce(`Seçilen mevzuat: ${law.name}`, "polite");
                 }}
                 onInsertCitation={(citation) => {
                   setInput((prev) => prev + " " + citation);
@@ -1027,6 +1143,14 @@ export default function ChatInterface({ initialTool: _initialTool, onBackToDashb
             </div>
           </div>
         </div>
+      )}
+
+      {/* Accessibility Settings Modal */}
+      {showAccessibilityPanel && (
+        <AccessibilitySettingsPanel
+          isOpen={showAccessibilityPanel}
+          onClose={() => setShowAccessibilityPanel(false)}
+        />
       )}
     </div>
   );

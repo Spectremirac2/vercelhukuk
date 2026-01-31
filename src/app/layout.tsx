@@ -4,6 +4,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ApiSettingsProvider } from "@/contexts/ApiSettingsContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
+import { SkipLinks } from "@/components/accessibility/SkipLinks";
+import { ScreenReaderAnnouncer } from "@/components/accessibility/ScreenReaderAnnouncer";
 
 // Font configurations
 const plusJakarta = Plus_Jakarta_Sans({
@@ -50,11 +53,17 @@ export default function RootLayout({
       </head>
       <body className={`${plusJakarta.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased font-sans`}>
         <ErrorBoundary>
-          <ThemeProvider>
-            <ApiSettingsProvider>
-              {children}
-            </ApiSettingsProvider>
-          </ThemeProvider>
+          <AccessibilityProvider>
+            <ThemeProvider>
+              <ApiSettingsProvider>
+                {/* Skip links for keyboard/screen reader navigation */}
+                <SkipLinks />
+                {/* Screen reader live region announcer */}
+                <ScreenReaderAnnouncer />
+                {children}
+              </ApiSettingsProvider>
+            </ThemeProvider>
+          </AccessibilityProvider>
         </ErrorBoundary>
       </body>
     </html>

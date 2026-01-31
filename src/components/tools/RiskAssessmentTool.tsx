@@ -110,24 +110,32 @@ export function RiskAssessmentTool({ isOpen, onClose }: RiskAssessmentToolProps)
     >
     <div className="space-y-6">
       {/* Assessment Type Toggle */}
-      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl">
+      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl" role="tablist" aria-label="Risk analizi türü seçimi">
         <button
           onClick={() => { setAssessmentType("case"); setResult(null); }}
-          className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+          className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
             assessmentType === "case"
               ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
               : "text-gray-400 hover:text-white hover:bg-white/5"
           }`}
+          role="tab"
+          aria-selected={assessmentType === "case"}
+          aria-controls="case-risk-panel"
+          aria-label="Dava risk analizi sekmesini seç"
         >
           ⚖️ Dava Risk Analizi
         </button>
         <button
           onClick={() => { setAssessmentType("contract"); setResult(null); }}
-          className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+          className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
             assessmentType === "contract"
               ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
               : "text-gray-400 hover:text-white hover:bg-white/5"
           }`}
+          role="tab"
+          aria-selected={assessmentType === "contract"}
+          aria-controls="contract-risk-panel"
+          aria-label="Sözleşme risk analizi sekmesini seç"
         >
           📄 Sözleşme Risk Analizi
         </button>
@@ -250,8 +258,8 @@ export function RiskAssessmentTool({ isOpen, onClose }: RiskAssessmentToolProps)
             </div>
 
             <div className="space-y-2 col-span-2">
-              <label className="block text-sm font-medium text-gray-300">Karşı Taraf Türü</label>
-              <div className="grid grid-cols-4 gap-2">
+              <label id="counterparty-label" className="block text-sm font-medium text-gray-300">Karşı Taraf Türü</label>
+              <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-labelledby="counterparty-label">
                 {[
                   { value: "individual", label: "Gerçek Kişi", icon: "👤" },
                   { value: "small_business", label: "KOBİ", icon: "🏪" },
@@ -261,13 +269,16 @@ export function RiskAssessmentTool({ isOpen, onClose }: RiskAssessmentToolProps)
                   <button
                     key={opt.value}
                     onClick={() => setCounterpartyType(opt.value as typeof counterpartyType)}
-                    className={`p-3 rounded-xl border transition-all ${
+                    className={`p-3 rounded-xl border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
                       counterpartyType === opt.value
                         ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
                         : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
                     }`}
+                    role="radio"
+                    aria-checked={counterpartyType === opt.value}
+                    aria-label={`Karşı taraf türü: ${opt.label}`}
                   >
-                    <span className="text-xl">{opt.icon}</span>
+                    <span className="text-xl" aria-hidden="true">{opt.icon}</span>
                     <div className="text-xs mt-1">{opt.label}</div>
                   </button>
                 ))}
